@@ -20,8 +20,9 @@ void *escritor( void *threadArgs){
         
         int escritor = *(int *)threadArgs;
         printf("[Escritor %i] -> Esperando a intentar escribir...\n", escritor);
-        
+        //printf("AQUI");----EL TECLADO NO SINCRONIZA
         sem_wait(&sem_permiso_e[escritor]);
+        
         contador_e++;
         
 
@@ -42,7 +43,8 @@ void *escritor( void *threadArgs){
         sem_post(&sem_escribir);
         
         
-        if(contador_e==0){//AVISO QUE NO HAY MAS ESCRITORES
+        if(contador_e==0 || contador_l>0){//AVISO QUE NO HAY MAS ESCRITORES Y HAY LECTORES LEYENDO
+            //printf("AQUI");
             sem_post(&sem_paso);
         }
     }
@@ -61,13 +63,13 @@ void *lector(void *threadArgs) {
         
         // ESPERO A LEER POR SI YA HAY MUCHOS LEYENDO
         sem_wait(&sem_leer);
-        if(contador_e>0){//SI HAY ESCRITORES TIENEN PRIORIDAD
+        if(contador_e>0 && contador_l==0){//SI HAY ESCRITORES TIENEN PRIORIDAD
 
             
         
-
+            
             sem_wait(&sem_paso);//ESPERO A QUE NO HAYA ESCRITORES
-
+            //printf("AQUI");
             
 
             
@@ -115,7 +117,7 @@ void *lector(void *threadArgs) {
             //AVISO DE QUE TERMINE DE LEER
             sem_post(&sem_leer);
             contador_l--;
-            if(contador_l==0 && contador_e>0){//SI YA NO HAY MAS LECTORES CONCURRENTES LEYENDO INDICO QUE PUEDE IR EL ESCRITOR
+            if(contador_l==0 && contador_e>0){//SI YA NO HAY MAS LECTORES CONCURRENTES LEYENDO INDICO QUE PUEDE IR EL ESCRITOR Y  HAY ESCRITORES QUE QUIEREN ESCRIBIR DABA CONFLCITO SI IBA UN LECTOR TERMINABA Y DESPUES UN ESCRITOR
 
                 sem_post(&sem_ocupado);
 
@@ -170,7 +172,7 @@ int main(int argc, char* argv[]){
 
     while(1){
         
-        sleep(1);
+        sleep(1.5);
         char opcion;
         int lector;
         int escritor;
@@ -195,6 +197,8 @@ int main(int argc, char* argv[]){
                 printf("Introduzca el número del escritor (de 1 a %i)\n", max_escritores);
                 scanf(" %i", &escritor);
                 sem_post(&sem_permiso_e[escritor]);
+                //printf("Dando permiso a escritor %d\n", escritor);
+
                 break;
             case '4':
                 printf("Introduzca el número del escritor (de 1 a %i)\n", max_escritores);

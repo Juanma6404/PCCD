@@ -9,17 +9,13 @@
 int señal;
 int contador;
 int status1,status2,status3,status4,status5;
+int pid1,res1,res2,res3,res4;
 
 
 
 int main(){
     
-    if(fork()==0){
-    int respuesta=execl("./p2","p2","Unai Simon",(char *)0);
-
-        
-        return 0;
-    }
+    printf("Unai Simón ");
 
     if(fork()==0){
     int respuesta=execl("./p2","p2","Carvajal",(char *)0);
@@ -42,18 +38,23 @@ int main(){
        
     return 0;
     }
-    wait(&status1);
-    wait(&status2);
-    wait(&status3);
+    res1=wait(&status1);
+    res2=wait(&status2);
+    res3=wait(&status3);
+    
+    if(res1==pid1||res2==pid1||res3==pid1){
+        wait(&status4);
+        printf("Rodri ");
+        printf("Pedri ");
+        printf("Lamine Yamal ");
+        printf("Morata\n");
+        return 0;
+    }
  
     printf("Rodri ");
+    wait(&status4);
     printf("Pedri ");
     printf("Lamine Yamal ");
-    wait(&status4);
-   
-    
-    
-
     printf("Morata\n");
     return 0;
 }

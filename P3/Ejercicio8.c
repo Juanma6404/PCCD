@@ -5,7 +5,7 @@
 
 int ID_memoria1,ID_memoria2;
 char *primer_address,*segundo_address;
-int vuelta;
+
 int puerta;
 
 
@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
 
     }
     else{
-        ID_memoria1 = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT|0666);
+        ID_memoria1 = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT|0666);//OWNER GROUP USER
         ID_memoria2 = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT|0666);//DEVUELVE ID DE MEMORIA COMPARTIDA EN EXITO O -1 SI FALLO
         if (ID_memoria1 == -1 || ID_memoria2 == -1){
             perror("Error al crear memoria compartida");
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
             *primer_address=1;
             
         }
-        do{
+        
         getchar();
         printf("Intentando acceder a la Sección Crítica\n");
 
@@ -70,27 +70,43 @@ int main(int argc, char *argv[]){
         
             printf("Dentro de mi Sección Crítica\n");
             
-            vuelta=0;
             
-            continue;
+            
+            
             
         }
         else if((*segundo_address==0) && (puerta==2)){
         
             printf("Dentro de mi Sección Crítica\n");            
 
-            vuelta=0;
+            
            
 
+            
+        }
+        else if((*segundo_address==1) &&(puerta==2)){
+            
+            printf("Puerta cerrada. Saliendo del Pasillo...\n");
+            getchar();
+            *primer_address = 0;//es mi puerta de salida en terminos logicos igual que la de entrada del otro proceso
+            printf("He accionado el pulsador\n\n");
+            shmdt(segundo_address);
+            printf("He salido del pasillo\n\n");
             continue;
         }
-        else{
+
+        else if((*primer_address==1) &&(puerta==1)){
             
-            printf("Puerta Cerrada\n");
-            vuelta=1;
-        }}
+            printf("Puerta cerrada. Saliendo del Pasillo...\n");
+            getchar();
+            *segundo_address = 0;//es mi puerta de salida en terminos logicos igual que la de entrada del otro proceso
+            printf("He accionado el pulsador\n\n");
+            shmdt(primer_address);
+            printf("He salido del pasillo\n\n");
+            continue;
+        }
         
-        while(vuelta==1);
+        
         getchar();
        
 

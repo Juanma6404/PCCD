@@ -1,0 +1,82 @@
+EJERCICIO 1
+----------------
+
+
+ESTRUCTURA ASOCIADA A LA MEMORIA QUE SE ASIGNA AUMENTA EN 1 EL SHM_NATTCH NUMERO DE ATTACHEd actuales
+#include <sys/shm.h>
+
+       int shmget(key_t key, size_t size, int shmflg);
+
+
+AUMENTA EN 1 EL CONTADOR 
+shmget() returns the identifier of the System V(una version de SO unix muy viejo de los 80) shared memory
+       segment associated with the value of the argument key.
+
+    USAMOS IPC_PRIVATE PARA EVITAR CONFLICTOS AL USAR EL FLAG IPC_CREAT Y METEMOS EL OR CON PERMISOS 
+
+
+IPC_PRIVATE isn't a flag field but a key_t type.  If this special
+       value is used for key, the system call ignores all but the least
+       significant 9 bits of shmflg and creates a new shared memory
+       segment.
+      
+IPC_PRIVATE is a special key value, not just a flag. It is used to indicate that
+the shared memory segment is being created specifically for the calling process, 
+and it will not be accessible by any other process (unless explicitly shared later).
+
+
+
+-----------------
+#include <sys/shm.h>
+
+       void *shmat(int shmid, const void *shmaddr, int shmflg);
+
+
+
+The shmat() function attaches the shared memory segment associated
+       with the shared memory identifier specified by shmid to the
+       address space of the calling process.
+
+ If shmaddr is a null pointer, the segment is attached at the
+           first available address as selected by the system.
+
+
+return the segment's
+       start address.
+Otherwise, the shared memory segment shall not be attached,
+       shmat() shall return (void *)-1, and errno shall be set to
+       indicate the error
+
+       XSI (X/Open System Interface) is a standard defined by the X/Open Consortium (which later became The Open Group) to ensure consistency and portability between Unix-like operating systems.
+The XSI specification aims to standardize various system interfaces, including inter-process communication (IPC) mechanisms such as shared memory, semaphores, and message queues.
+XSI adds enhancements to the System V IPC mechanisms, making them more portable across different Unix-like systems.
+
+------------
+#include <sys/shm.h>
+
+       int shmdt(const void *shmaddr);
+
+
+The shmdt() function detaches the shared memory segment located at
+       the address specified by shmaddr from the address space of the
+       calling process
+
+return 0
+Otherwise, the shared memory segment shall not be detached,
+       shmdt() shall return -1
+
+
+----------
+EJERCICIO 3
+-----------
+#include <sys/shm.h>
+
+       int shmctl(int shmid, int op, struct shmid_ds *buf);
+
+
+       buf apunta a la estructura ASOCIADA
+
+       marca el segmento a destruir pero solo lo hace cuando todos los procesos attached a esa estructura ya no lo esten es decir el shm_nattach sea 0
+
+
+

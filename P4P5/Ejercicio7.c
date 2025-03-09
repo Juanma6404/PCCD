@@ -12,6 +12,8 @@ int contador_l=0;
 int lectores = 0;
 int escritores = 0;
 int max_lectores_concurr;
+pthread_key_t key_adelantos;
+
 
 
 void *escritor( void *threadArgs){
@@ -53,6 +55,10 @@ void *escritor( void *threadArgs){
 void *lector(void *threadArgs) {
     while(1) {
         int lector = *(int *)threadArgs;
+
+        int *adelantos = malloc(sizeof(int));
+        *adelantos = 0;
+        pthread_setspecific(key_adelantos, adelantos);
    
         //ESPERA A PERMISO PARA LEER
         printf("[Lector %i] -> Esperando a intentar leer...\n", lector);
@@ -63,18 +69,17 @@ void *lector(void *threadArgs) {
         sem_wait(&sem_leer);
         if(contador_e>0){//SI HAY ESCRITORES TIENEN PRIORIDAD
 
-            
+            int *mis_adelantos = (int *)pthread_getspecific(key_adelantos);
+
+            if (*mis_adelantos >= 7) {
+                printf("[Lector %i] -> Fue adelantado 7 veces, ahora tiene prioridad\n", lector);
+            }
         
-
+            else{
             sem_wait(&sem_paso);//ESPERO A QUE NO HAYA ESCRITORES
-
-            
-
-            
-
-            
-
-            //LEO
+            (*mis_adelantos)++;
+            }
+           //LEO
             printf("[Lector %i] -> Leyendo...\n", lector);
             contador_l++;
         
@@ -145,6 +150,8 @@ int main(int argc, char* argv[]){
     sem_init(&sem_escribir, 0, 1);
     sem_init(&sem_ocupado,0,0);
     sem_init(&sem_paso,0,0);
+    pthread_key_create(&key_adelantos,NULL);
+
     
 
     if (max_lectores_concurr>=max_lectores){

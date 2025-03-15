@@ -11,7 +11,7 @@ int contador_e=0;
 int contador_l=0;
 int lectores = 0;
 int escritores = 0;
-int max_lectores_concurr;
+int max_lectores_concurr=0;
 
 
 void *escritor( void *threadArgs){
@@ -20,7 +20,7 @@ void *escritor( void *threadArgs){
         
         int escritor = *(int *)threadArgs;
         printf("[Escritor %i] -> Esperando a intentar escribir...\n", escritor);
-        //printf("AQUI");----EL TECLADO NO SINCRONIZA
+        //printf("AQUI");//----EL TECLADO NO SINCRONIZA
         sem_wait(&sem_permiso_e[escritor]);
         
         contador_e++;
@@ -62,7 +62,13 @@ void *lector(void *threadArgs) {
         printf("[Lector %i] -> Intentando leer...\n", lector);
         
         // ESPERO A LEER POR SI YA HAY MUCHOS LEYENDO
-        sem_wait(&sem_leer);
+
+        if(contador_l>0){
+            
+            sem_wait(&sem_leer);
+        
+        }
+        
         if(contador_e>0 && contador_l==0){//SI HAY ESCRITORES TIENEN PRIORIDAD
 
             
@@ -72,10 +78,7 @@ void *lector(void *threadArgs) {
             //printf("AQUI");
             
 
-            
-
-            
-
+        
             //LEO
             printf("[Lector %i] -> Leyendo...\n", lector);
             contador_l++;
@@ -100,11 +103,6 @@ void *lector(void *threadArgs) {
         }
         else{
             
-         
-
-            
-
-            
 
             //LEO
             printf("[Lector %i] -> Leyendo...\n", lector);
@@ -124,9 +122,7 @@ void *lector(void *threadArgs) {
             }
         
         
-            
-
-        }
+    }
         
     }
 }
@@ -158,7 +154,9 @@ int main(int argc, char* argv[]){
         int *arg = malloc(sizeof(int)); 
         *arg = i+1;
         pthread_create(&threadIdLectores[i], NULL, lector, arg);
-        sem_init(&sem_permiso_l[i], 0, 0);
+        if(sem_init(&sem_permiso_l[i], 0, 0)==-1){
+            printf("ERROR");
+        }
         sem_init(&sem_terminar_l[i], 0, 0);
     }
 
@@ -166,7 +164,9 @@ int main(int argc, char* argv[]){
         int *arg = malloc(sizeof(int)); //para que no de warning        
         *arg = i+1;
         pthread_create(&threadIdEscritores[i], NULL, escritor, arg);
-        sem_init(&sem_permiso_e[i], 0, 0);
+        if(sem_init(&sem_permiso_e[i], 0, 0)==-1){
+            printf("ERROR");
+        }
         sem_init(&sem_terminar_e[i], 0, 0);
     }
 
@@ -206,6 +206,8 @@ int main(int argc, char* argv[]){
                 sem_post(&sem_terminar_e[escritor]);
                 break;
             case '5':
+
+
                 exit(1);
             default:
                 printf("Opción no válida\n");

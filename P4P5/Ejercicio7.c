@@ -12,8 +12,8 @@ int contador_l=0;
 int lectores = 0;
 int escritores = 0;
 int max_lectores_concurr;
-pthread_key_t key_adelantos;
-
+int adelantamientos;
+int papel_ocupado;
 
 
 void *escritor( void *threadArgs){
@@ -22,8 +22,9 @@ void *escritor( void *threadArgs){
         
         int escritor = *(int *)threadArgs;
         printf("[Escritor %i] -> Esperando a intentar escribir...\n", escritor);
-        
+        //printf("AQUI");----EL TECLADO NO SINCRONIZA
         sem_wait(&sem_permiso_e[escritor]);
+        
         contador_e++;
         
 
@@ -36,15 +37,17 @@ void *escritor( void *threadArgs){
             sem_wait(&sem_ocupado);
             
         }
-        
+        papel_ocupado++;
         printf("[Escritor %i] -> Escribiendo...\n", escritor);
         sem_wait(&sem_terminar_e[escritor]);
         printf("[Escritor %i] -> Fin escritura\n", escritor);
+        papel_ocupado--;
         contador_e--;
         sem_post(&sem_escribir);
         
         
-        if(contador_e==0){//AVISO QUE NO HAY MAS ESCRITORES
+        if(contador_e==0 || contador_l>0 || contador_e>0){//AVISO QUE NO HAY MAS ESCRITORES Y HAY LECTORES LEYENDO
+            //printf("AQUI");
             sem_post(&sem_paso);
         }
     }
@@ -55,10 +58,6 @@ void *escritor( void *threadArgs){
 void *lector(void *threadArgs) {
     while(1) {
         int lector = *(int *)threadArgs;
-
-        int *adelantos = malloc(sizeof(int));
-        *adelantos = 0;
-        pthread_setspecific(key_adelantos, adelantos);
    
         //ESPERA A PERMISO PARA LEER
         printf("[Lector %i] -> Esperando a intentar leer...\n", lector);
@@ -67,47 +66,18 @@ void *lector(void *threadArgs) {
         
         // ESPERO A LEER POR SI YA HAY MUCHOS LEYENDO
         sem_wait(&sem_leer);
-        if(contador_e>0){//SI HAY ESCRITORES TIENEN PRIORIDAD
+        while(contador_e>0 && contador_l==0 && adelantamientos>0){//SI HAY ESCRITORES TIENEN PRIORIDAD
 
-            int *mis_adelantos = (int *)pthread_getspecific(key_adelantos);
-
-            if (*mis_adelantos >= 7) {
-                printf("[Lector %i] -> Fue adelantado 7 veces, ahora tiene prioridad\n", lector);
-            }
+            
         
-            else{
+            
             sem_wait(&sem_paso);//ESPERO A QUE NO HAYA ESCRITORES
-            (*mis_adelantos)++;
-            }
-           //LEO
-            printf("[Lector %i] -> Leyendo...\n", lector);
-            contador_l++;
-        
-            // ESPERO A QUE TERMINE DE LEER
-            sem_wait(&sem_terminar_l[lector]);
-            printf("[Lector %i] -> Fin lectura\n", lector);
-
-            //AVISO DE QUE TERMINE DE LEER
-            contador_l--;
-        
-            sem_post(&sem_leer);
-
-            if(contador_l==0 && contador_e>0){//SI YA NO HAY MAS LECTORES CONCURRENTES LEYENDO INDICO QUE PUEDE IR EL ESCRITOR
-
-                sem_post(&sem_ocupado);
-
-            }
+            //printf("AQUI");
             
-
-
         }
-        else{
-            
-         
-
-            
-
-            
+        if(papel_ocupado>0){
+            sem_wait(&sem_paso);
+        }
 
             //LEO
             printf("[Lector %i] -> Leyendo...\n", lector);
@@ -118,21 +88,28 @@ void *lector(void *threadArgs) {
             printf("[Lector %i] -> Fin lectura\n", lector);
 
             //AVISO DE QUE TERMINE DE LEER
-            sem_post(&sem_leer);
             contador_l--;
+        
+            sem_post(&sem_leer);
+
             if(contador_l==0 && contador_e>0){//SI YA NO HAY MAS LECTORES CONCURRENTES LEYENDO INDICO QUE PUEDE IR EL ESCRITOR
 
                 sem_post(&sem_ocupado);
 
             }
+            
+
+
         
         
             
 
-        }
+        
         
     }
-}
+        
+    }
+
 
 
 
@@ -144,14 +121,13 @@ int main(int argc, char* argv[]){
     int max_lectores = atoi(argv[1]);
     max_lectores_concurr = atoi(argv[2]);
     int max_escritores = atoi(argv[3]);
+    int adelantamientos = atoi(argv[4]);
     pthread_t threadIdLectores[max_lectores];
     pthread_t threadIdEscritores[max_escritores];
     sem_init(&sem_leer, 0, max_lectores_concurr);
     sem_init(&sem_escribir, 0, 1);
     sem_init(&sem_ocupado,0,0);
     sem_init(&sem_paso,0,0);
-    pthread_key_create(&key_adelantos,NULL);
-
     
 
     if (max_lectores_concurr>=max_lectores){
@@ -177,7 +153,7 @@ int main(int argc, char* argv[]){
 
     while(1){
         
-        sleep(1);
+        sleep(1.5);
         char opcion;
         int lector;
         int escritor;
@@ -202,6 +178,8 @@ int main(int argc, char* argv[]){
                 printf("Introduzca el número del escritor (de 1 a %i)\n", max_escritores);
                 scanf(" %i", &escritor);
                 sem_post(&sem_permiso_e[escritor]);
+                //printf("Dando permiso a escritor %d\n", escritor);
+
                 break;
             case '4':
                 printf("Introduzca el número del escritor (de 1 a %i)\n", max_escritores);
